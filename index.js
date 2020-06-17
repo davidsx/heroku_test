@@ -1,9 +1,9 @@
 const express = require('express');
 const Bundler = require('parcel-bundler');
 const path = require('path');
-const api = require('./api');
+const api = require('./server/api');
 
-const file = path.join(__dirname, '../client/index.html');
+const file = path.join(__dirname, 'client/index.html');
 const options = {
   outDir: './client/dist',
   cacheDir: './client/.cache',
@@ -14,9 +14,9 @@ const app = express();
 
 app.use('/api', api);
 if (process.env.NODE_ENV !== 'production') {
-  app.use(express.static(path.join(__dirname, '../client/dist')));
+  app.use(express.static(path.join(__dirname, 'client/dist')));
   app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/index.html'));
+    res.sendFile(path.join(__dirname, 'client/dist/index.html'));
   })
   
 } else {
