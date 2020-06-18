@@ -1,5 +1,4 @@
 const express = require('express');
-const Bundler = require('parcel-bundler');
 const path = require('path');
 const api = require('./api');
 
@@ -9,6 +8,7 @@ const port = process.env.PORT || 5000;
 
 app.use('/api', api);
 if (process.env.NODE_ENV !== 'production') {
+  const Bundler = require('parcel-bundler');
   const file = path.join(__dirname, '../client/index.html');
   const options = {
     outDir: './client/dist',
