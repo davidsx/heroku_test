@@ -1,0 +1,17 @@
+const express = require('express');
+const jwt = require('jsonwebtoken');
+
+const SECRET = process.env.SECRET || 'my-testing-secret';
+
+const router = express.Router();
+
+router.post('/login', (req, res) => {
+  const {user} = req.body;
+  var token = jwt.sign({user}, SECRET, {
+    expiresIn: '20m',
+  });
+
+  res.json(token);
+});
+
+module.exports = router;
