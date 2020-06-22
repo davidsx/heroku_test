@@ -31,7 +31,7 @@ io.on(
   const {user} = socket.decoded_token;
   console.log(`${user} is connected to server.`);
 
-  socket.on('message', ({token, message}) => {
+  socket.on('message', ({token, text}, callback) => {
     jwt.verify(token, 'my-testing-secret', function (error, decoded) {
       if (error) {
         socket.emit('unauthorized', {
@@ -45,7 +45,8 @@ io.on(
         });
       } else {
         const {user} = decoded;
-        socket.emit('message', user, message);
+        socket.emit('message', {user, text, timestamp: Date.now()});
+        callback();
       }
     });
   });

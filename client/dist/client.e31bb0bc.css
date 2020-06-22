@@ -1,0 +1,143 @@
+.chat {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  grid-auto-rows: 100%;
+}
+
+.sidebar {
+  margin: 20px;
+  background-color: white;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.main {
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+  margin-bottom: 20px;
+}
+
+.message-box {
+  height: 80px;
+  border-radius: 40px;
+  background-color: white;
+  margin-top: auto;
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+}
+.message-box * {
+  margin: 0 20px;
+}
+.message-box *:first-child {
+  margin-left: 0;
+}
+.message-box *:last-child {
+  margin-right: 0;
+}
+.message-box input {
+  font-family: inherit;
+  border: none;
+  width: 100%;
+  height: 75%;
+  font-size: 1em;
+}
+.message-box input:focus {
+  outline: none;
+}
+.message-box button {
+  height: 40px;
+  width: 40px;
+  background-color: #4495ff;
+  border-radius: 20px;
+  border: none;
+}
+.message-box button:focus {
+  outline: none;
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 5px 0;
+}
+.message-content .message {
+  font-size: 1.5em;
+  padding: 5px 10px;
+  border-radius: 10px;
+}
+.message-content.message-received .message {
+  background-color: white;
+}
+.message-content.message-sent .message {
+  background-color: greenyellow;
+  margin-left: auto;
+}
+.message-content.message-sent .sender {
+  display: none;
+}
+.login {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.instruction {
+  margin: 20px 0;
+}
+
+.passcode-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 50px;
+}
+
+.passcode {
+  height: min(12vh, 12vw);
+  width: min(12vh, 12vw);
+  border: 5px solid grey;
+  border-radius: 20px;
+  margin: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.passcode-circle {
+  height: min(4vh, 4vw);
+  width: min(4vh, 4vw);
+  border-radius: 50%;
+  background-color: grey;
+}
+
+.name {
+  width: 70%;
+  height: 50px;
+  line-height: 50px;
+  font-family: inherit;
+  border: 0;
+  border-bottom: 2px solid #9b9b9b;
+  outline: 0;
+  font-size: 2rem;
+  text-align: center;
+  padding: 7px 0;
+  background: transparent;
+  transition: border-color 0.2s;
+}
+
+/*# sourceMappingURL=/client.e31bb0bc.css.map */

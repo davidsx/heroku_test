@@ -1,0 +1,101 @@
+.chat {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  grid-auto-rows: 100%;
+}
+
+.sidebar {
+  margin: 20px;
+  background-color: white;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.main {
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+  margin-bottom: 20px;
+}
+
+.message-box {
+  height: 80px;
+  border-radius: 40px;
+  background-color: white;
+  margin-top: auto;
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+
+  * {
+    margin: 0 20px;
+
+    &:first-child {
+      margin-left: 0;
+    }
+
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+
+  input {
+    font-family: inherit;
+    border: none;
+    width: 100%;
+    height: 75%;
+    font-size: 1em;
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  button {
+    height: 40px;
+    width: 40px;
+    background-color: #4495ff;
+    border-radius: 20px;
+    border: none;
+
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 5px 0;
+
+  .message {
+    font-size: 1.5em;
+    padding: 5px 10px;
+    border-radius: 10px;
+  }
+
+  &.message-received .message {
+    background-color: white;
+  }
+
+  &.message-sent .message {
+    background-color: greenyellow;
+    margin-left: auto;
+  }
+
+  &.message-sent .sender {
+    display: none;
+  }
+}
