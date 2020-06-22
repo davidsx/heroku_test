@@ -6,20 +6,19 @@ const router = express.Router();
 
 const SECRET = process.env.SECRET || 'my-testing-secret';
 
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader(' ')[1];
-  if (token == null) return res.sendStatus(401);
+router.use((req, res, next) => {
+  // const authHeader = req.headers['authorization'];
+  // const token = authHeader && authHeader.split(' ')[1];
+  // if (token == null) return res.sendStatus(401);
+  const token = res.cookies && res.cookies.token;
 
   jwt.verify(token, SECRET, (error, decoded) => {
     if (error) return res.sendStatus(403);
     const {user} = decoded;
     req.user = user;
     next();
-  })
-}
-
-router.use(authenticateToken);
+  });
+});
 
 router.get('/passwords', (req, res) => {
   const count = 5;
@@ -31,6 +30,15 @@ router.get('/passwords', (req, res) => {
   res.json(passwords);
 
   console.log(`Sent ${count} passwords`);
+});
+
+router.get('/userCount', (req, res) => {
+  // res.cookie('test', 1234, {
+  //   maxAge: 946080000000,
+  //   httpOnly: true,
+  // });
+  console.log(req.cookies);
+  res.json(1234);
 });
 
 module.exports = router;

@@ -1,36 +1,51 @@
 import React, {useState, useEffect, useContext} from 'react';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faPaperPlane} from '@fortawesome/free-solid-svg-icons';
-import io from 'socket.io-client';
+import {Redirect} from 'react-router-dom';
 import axios from 'axios';
+import {useCookies} from 'react-cookie';
 
 import UserContext from '../providers/context';
+
 import '../styles/chat.scss';
 
 const Chat = () => {
-  const {socket, user, userCount, setUserCount} = useContext(UserContext);
+  const [cookies, setCookie, removeCookie] = useCookies(['token']);
+  const {socket, user, token} = useContext(UserContext);
+  const [userCount, setUserCount] = useState(0);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (user === null) {
-      window.location = window.location.origin;
+    console.log('cookies', cookies);
+    console.log('socket:', socket);
+    console.log('user:', user);
+    console.log('token:', token);
+    if (token) {
+      axios
+        // .get(`/api/userCount`, {
+        //   headers: {Authorization: `Bearer ${token}`},
+        // })
+        .get(`/api/userCount`, {
+          withCredentials: true,
+        })
+        .then((response) => {
+          if (response.status === 200) {
+            setUserCount(response.data.userCount);
+          }
+        });
     }
 
-    // axios.get(GetUserCountUrl).then((response) => {
-    //   if (response.status === 200) {
-    //     setUserCount(response.data.userCount);
-    //   }
-    // });
+    return () => {
+      socket.emit('disconnect');
+      socket.off();
+    };
+  }, []);
 
+  useEffect(() => {
     socket.on('userEnter', () => setUserCount((userCount) => userCount + 1));
     socket.on('userLeave', () => setUserCount((userCount) => userCount - 1));
-
-    // return () => {
-    //   socket.emit('disconnect');
-    //   socket.off();
-    // };
-  }, [user]);
+  }, [userCount]);
 
   useEffect(() => {
     socket.on('message', (newMessage) => {
@@ -48,15 +63,17 @@ const Chat = () => {
       socket.emit(
         'message',
         {
-          token: response.data,
-          message: 'helloworld!',
+          token,
+          message,
         },
         () => setMessage('')
       );
     }
   }
 
-  return (
+  return !socket || !user || !token ? (
+    <Redirect to="/" />
+  ) : (
     <div className="chat">
       <div className="sidebar">
         <pre>{JSON.stringify(user)}</pre>
@@ -69,13 +86,11 @@ const Chat = () => {
               <div
                 key={message.timestamp}
                 className={`message-content ${
-                  message.name == user
-                    ? 'message-sent'
-                    : 'message-received'
+                  message.user == user ? 'message-sent' : 'message-received'
                 }`}
               >
-                <span className="sender">{message.name}</span>
-                <span className="message">{message.text}</span>
+                <span className="sender">{message.user}</span>
+                <span className="message">{message.message}</span>
               </div>
             );
           })}

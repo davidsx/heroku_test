@@ -2,18 +2,21 @@ import React, {useState, useEffect, useContext, useRef, useMemo} from 'react';
 import {Redirect} from 'react-router-dom';
 import io from 'socket.io-client';
 import axios from 'axios';
+import {useCookies} from 'react-cookie';
 
 import UserContext from '../providers/context';
+
 import '../styles/login.scss';
 
 const Login = () => {
   // const abortController = new AbortController();
   // const signal = abortController.signal;
-  const {setSocket, user, setUser} = useContext(UserContext);
+  const [cookies, setCookie, removeCookie] = useCookies(['token']);
+  const {setSocket, user, setUser, setToken} = useContext(UserContext);
   const [code, setCode] = useState([]);
   const [name, setName] = useState('');
-  const [loginReady, setLoginReady] = useState(false);
   const [error, setError] = useState('');
+  const [loginFinish, setLoginFinish] = useState(false);
 
   const onkeydown = useMemo(
     () =>
@@ -32,50 +35,62 @@ const Login = () => {
           setError('');
         } else if (e.key === 'Enter') {
           if (code.length < 4) return;
-          else setLoginReady(true);
+          else {
+            axios
+              .post(`/auth/login`, {user: name})
+              .then(function (response) {
+                const token = response.data;
+
+                axios.interceptors.request.use(
+                  (config) => {
+                    config.headers.Authorization = `Bearer ${token}`;
+                    return config;
+                  },
+                  (error) => {
+                    return Promise.reject(error);
+                  }
+                );
+
+                const socket = io.connect(window.location.href);
+
+
+                socket.on('connect', () => {
+                  socket.emit('authenticate', {token});
+                  console.log(
+                    'connected to socket-io server, waiting for authentication.'
+                  );
+                });
+
+                socket.on('authenticated', () => {
+                  setUser(name);
+                  setSocket(socket);
+                  setToken(token);
+                  console.log('user authenticated');
+                  setLoginFinish(true);
+                  // setInterval(() => {
+                  //   socket.emit('verify', {token}, function () {
+                  //     window.location.reload();
+                  //   });
+                  // }, 5000);
+                });
+
+                socket.on('unauthorized', (error, callback) => {
+                  console.log(error);
+                  console.log(error.data);
+                  if (
+                    error.data.type == 'UnauthorizedError' ||
+                    error.data.code == 'invalid_token'
+                  ) {
+                    console.log('User not authorized:', error.data.message);
+                  }
+                });
+                console.log(socket);
+              });
+          }
         }
       },
     [code, setCode, name, setName]
   );
-
-  useEffect(() => {
-    if (loginReady) {
-      axios
-      .post(`${window.location.href}auth/login`, {user})
-      .then(function (response) {
-        const token = response.data;
-        const socket = io.connect(window.location.href);
-
-        socket.on('connect', () => {
-          socket.emit('authenticate', {token});
-          console.log(
-            'connected to socket io server, waiting for authentication.'
-          );
-        });
-
-        socket.on('authenticated', () => {
-          setUser({token, name});
-          setSocket(socket);
-          console.log('user authenticated');
-          setInterval(() => {
-            socket.emit('verify', {token: response.data});
-          }, 5000);
-        });
-
-        socket.on('unauthorized', (error, callback) => {
-          console.log(error);
-          console.log(error.data);
-          if (
-            error.data.type == 'UnauthorizedError' ||
-            error.data.code == 'invalid_token'
-          ) {
-            console.log('User not authorized:', error.data.message);
-          }
-        });
-        console.log(socket);
-      });
-    }
-  }, [loginReady]);
 
   useEffect(() => {
     return () => {
@@ -83,11 +98,11 @@ const Login = () => {
       // abortController.abort();
       document.onkeydown = null;
     };
-  }, []);
+  }, [loginFinish]);
 
   document.onkeydown = onkeydown;
 
-  return user ? (
+  return loginFinish ? (
     <Redirect to="/chat" />
   ) : (
     <div className="login">
