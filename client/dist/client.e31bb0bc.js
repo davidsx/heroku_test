@@ -50081,7 +50081,11 @@ function serialize(name, val, options) {
 
   if (null != opt.maxAge) {
     var maxAge = opt.maxAge - 0;
-    if (isNaN(maxAge)) throw new Error('maxAge should be a Number');
+
+    if (isNaN(maxAge) || !isFinite(maxAge)) {
+      throw new TypeError('option maxAge is invalid');
+    }
+
     str += '; Max-Age=' + Math.floor(maxAge);
   }
 
@@ -60776,8 +60780,7 @@ var Chat = function Chat() {
 
   var _useContext = (0, _react.useContext)(_context.default),
       socket = _useContext.socket,
-      user = _useContext.user,
-      token = _useContext.token;
+      user = _useContext.user;
 
   var _useState = (0, _react.useState)(0),
       _useState2 = _slicedToArray(_useState, 2),
@@ -60795,20 +60798,12 @@ var Chat = function Chat() {
       setMessage = _useState6[1];
 
   (0, _react.useEffect)(function () {
-    console.log('cookies', cookies);
-    console.log('socket:', socket);
     console.log('user:', user);
-    console.log('token:', token);
 
-    if (token) {
-      _axios.default // .get(`/api/userCount`, {
-      //   headers: {Authorization: `Bearer ${token}`},
-      // })
-      .get("/api/userCount", {
-        withCredentials: true
-      }).then(function (response) {
+    if (user) {
+      _axios.default.get("/api/userCount").then(function (response) {
         if (response.status === 200) {
-          setUserCount(response.data.userCount);
+          setUserCount(response.data);
         }
       });
     }
@@ -60845,16 +60840,13 @@ var Chat = function Chat() {
     e.preventDefault();
 
     if (message) {
-      socket.emit('message', {
-        token: token,
-        message: message
-      }, function () {
+      socket.emit('message', message, function () {
         return setMessage('');
       });
     }
   }
 
-  return !socket || !user || !token ? /*#__PURE__*/_react.default.createElement(_reactRouterDom.Redirect, {
+  return !socket || !user ? /*#__PURE__*/_react.default.createElement(_reactRouterDom.Redirect, {
     to: "/"
   }) : /*#__PURE__*/_react.default.createElement("div", {
     className: "chat"
@@ -60956,9 +60948,7 @@ var Login = function Login() {
 
   var _useContext = (0, _react.useContext)(_context.default),
       setSocket = _useContext.setSocket,
-      user = _useContext.user,
-      setUser = _useContext.setUser,
-      setToken = _useContext.setToken;
+      setUser = _useContext.setUser;
 
   var _useState = (0, _react.useState)([]),
       _useState2 = _slicedToArray(_useState, 2),
@@ -60994,43 +60984,41 @@ var Login = function Login() {
           _axios.default.post("/auth/login", {
             user: name
           }).then(function (response) {
-            var token = response.data;
+            if (response.status === 200) {
+              var socket = _socket.default.connect(window.location.href);
 
-            _axios.default.interceptors.request.use(function (config) {
-              config.headers.Authorization = "Bearer ".concat(token);
-              return config;
-            }, function (error) {
-              return Promise.reject(error);
-            });
-
-            var socket = _socket.default.connect(window.location.href);
-
-            socket.on('connect', function () {
-              socket.emit('authenticate', {
-                token: token
+              socket.on('connect_error', function (err) {
+                return console.log(err);
               });
-              console.log('connected to socket-io server, waiting for authentication.');
-            });
-            socket.on('authenticated', function () {
-              setUser(name);
-              setSocket(socket);
-              setToken(token);
-              console.log('user authenticated');
-              setLoginFinish(true); // setInterval(() => {
-              //   socket.emit('verify', {token}, function () {
-              //     window.location.reload();
-              //   });
-              // }, 5000);
-            });
-            socket.on('unauthorized', function (error, callback) {
-              console.log(error);
-              console.log(error.data);
-
-              if (error.data.type == 'UnauthorizedError' || error.data.code == 'invalid_token') {
-                console.log('User not authorized:', error.data.message);
-              }
-            });
-            console.log(socket);
+              socket.on('connect_failed', function (err) {
+                return console.log(err);
+              });
+              socket.on('disconnect', function (err) {
+                return console.log(err);
+              });
+              socket.on('error', function (error) {
+                console.log(error);
+                setError(error);
+              });
+              socket.on('connect', function () {
+                console.log('connected, waiting for authentication');
+                console.log(socket);
+              });
+              socket.on('authenticated', function () {
+                setUser(name);
+                setSocket(socket);
+                setLoginFinish(true);
+              });
+              socket.on('authorized', function () {
+                console.log('user authorized. next authorization will be scheduled in 5 secs');
+              });
+              socket.on('unauthorized', function () {
+                console.log('user not authroized!!!');
+                socket.emit('disconnect');
+                socket.off();
+                window.location.reload();
+              });
+            }
           });
         }
       }
@@ -61132,26 +61120,19 @@ var App = function App() {
       user = _useState2[0],
       setUser = _useState2[1];
 
-  var _useState3 = (0, _react.useState)(''),
+  var _useState3 = (0, _react.useState)(dummySocket),
       _useState4 = _slicedToArray(_useState3, 2),
-      token = _useState4[0],
-      setToken = _useState4[1];
-
-  var _useState5 = (0, _react.useState)(dummySocket),
-      _useState6 = _slicedToArray(_useState5, 2),
-      socket = _useState6[0],
-      setSocket = _useState6[1];
+      socket = _useState4[0],
+      setSocket = _useState4[1];
 
   var contextValue = (0, _react.useMemo)(function () {
     return {
       user: user,
       setUser: setUser,
       socket: socket,
-      setSocket: setSocket,
-      token: token,
-      setToken: setToken
+      setSocket: setSocket
     };
-  }, [user, setUser, socket, setSocket, token, setToken]);
+  }, [user, setUser, socket, setSocket]);
   return /*#__PURE__*/_react.default.createElement(_reactCookie.CookiesProvider, null, /*#__PURE__*/_react.default.createElement(_reactRouterDom.BrowserRouter, null, /*#__PURE__*/_react.default.createElement(_context.default.Provider, {
     value: contextValue
   }, /*#__PURE__*/_react.default.createElement(_reactRouterDom.Route, {
@@ -61462,7 +61443,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "65425" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58604" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

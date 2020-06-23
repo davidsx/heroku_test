@@ -2,8 +2,7 @@ const express = require('express');
 const path = require('path');
 const http = require('http');
 const socketio = require('socket.io');
-const socketioJwt = require('socketio-jwt');
-// const bodyParser = require('body-parser');
+const cookie = require('cookie');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 
@@ -24,67 +23,39 @@ app.use(express.json());
 app.use(cookieParser());
 
 // * socket io
-io.on(
-  'connection',
-  socketioJwt.authorize({
-    secret: SECRET,
-  })
-).on('authenticated', (socket) => {
-  //this socket is authenticated, we are good to handle more events from it.
-  console.log(socket.decoded_token);
-  const {user} = socket.decoded_token;
-  console.log(`${user} is connected to server.`);
-  console.log(socket.handshake.headers.cookie);
+io.on('connection', (socket) => {
+  const user = socket.user;
+  console.log(`${user} is connected to server. authentication start.`);
+
+  const authentication = (next) => {
+    var token = cookie.parse(socket.request.headers.cookie).token;
+    if (!token) token = cookie.parse(socket.handshake.headers.cookie).token;
+    if (!token) socket.emit('unauthorized', 'Token not found');
+    jwt.verify(token, SECRET, function (error, decoded) {
+      if (error) {
+        socket.emit('unauthorized', 'Token invalid');
+      } else {
+        next();
+      }
+    });
+  };
+
+  setTimeout(() => authentication(() => socket.emit('authenticated')), 1000);
+  setInterval(() => authentication(() => socket.emit('authorized')), 5000);
 
   socket.use((packet, next) => {
     const [event, args, callback] = packet;
-    console.log('event:', event);
-    console.log('args:', args);
-    console.log('callback:', callback);
-    // console.log(packet);
-    next();
+    authentication(next);
   });
 
-  socket.on('message', ({token, message}, callback) => {
-    jwt.verify(token, SECRET, function (error, decoded) {
-      if (error) {
-        socket.emit('unauthorized', {
-          data: {
-            message: error.message,
-            code: 'invalid_token',
-            type: 'UnauthorizedError',
-          },
-          inner: {message: error.message},
-          message: error.message,
-        });
-      } else {
-        const {user} = decoded;
-        socket.emit('message', {user, message, timestamp: Date.now()});
-        console.log(`${user} says: ${message}`);
-        callback();
-      }
-    });
+  socket.on('message', (message, callback) => {
+    socket.emit('message', {user, message, timestamp: Date.now()});
+    console.log(`${user} says: ${message}`);
+    callback();
   });
 
-  socket.on('verify', ({token}, callback) => {
-    jwt.verify(token, 'my-testing-secret', function (error, decoded) {
-      if (error) {
-        console.log(`${user} is unverified at ${Date.now()}`);
-        socket.emit('unauthorized', {
-          data: {
-            message: error.message,
-            code: 'invalid_token',
-            type: 'UnauthorizedError',
-          },
-          inner: {message: error.message},
-          message: error.message,
-        });
-        callback();
-      } else {
-        const {user} = decoded;
-        console.error(`${user} is verified at ${Date.now()}`);
-      }
-    });
+  socket.on('verify', () => {
+    console.log(`${user} is verified at ${Date.now()}`);
   });
 
   socket.on('disconnect', () => {

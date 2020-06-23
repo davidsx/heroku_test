@@ -12,7 +12,7 @@ const Login = () => {
   // const abortController = new AbortController();
   // const signal = abortController.signal;
   const [cookies, setCookie, removeCookie] = useCookies(['token']);
-  const {setSocket, user, setUser, setToken} = useContext(UserContext);
+  const {setSocket, setUser} = useContext(UserContext);
   const [code, setCode] = useState([]);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -36,56 +36,44 @@ const Login = () => {
         } else if (e.key === 'Enter') {
           if (code.length < 4) return;
           else {
-            axios
-              .post(`/auth/login`, {user: name})
-              .then(function (response) {
-                const token = response.data;
-
-                axios.interceptors.request.use(
-                  (config) => {
-                    config.headers.Authorization = `Bearer ${token}`;
-                    return config;
-                  },
-                  (error) => {
-                    return Promise.reject(error);
-                  }
-                );
-
+            axios.post(`/auth/login`, {user: name}).then(function (response) {
+              if (response.status === 200) {
                 const socket = io.connect(window.location.href);
 
+                socket.on('connect_error', (err) => console.log(err));
+                socket.on('connect_failed', (err) => console.log(err));
+                socket.on('disconnect', (err) => console.log(err));
+
+                socket.on('error', (error) => {
+                  console.log(error);
+                  setError(error);
+                });
 
                 socket.on('connect', () => {
-                  socket.emit('authenticate', {token});
-                  console.log(
-                    'connected to socket-io server, waiting for authentication.'
-                  );
+                  console.log('connected, waiting for authentication');
+                  console.log(socket);
                 });
 
                 socket.on('authenticated', () => {
                   setUser(name);
                   setSocket(socket);
-                  setToken(token);
-                  console.log('user authenticated');
                   setLoginFinish(true);
-                  // setInterval(() => {
-                  //   socket.emit('verify', {token}, function () {
-                  //     window.location.reload();
-                  //   });
-                  // }, 5000);
                 });
 
-                socket.on('unauthorized', (error, callback) => {
-                  console.log(error);
-                  console.log(error.data);
-                  if (
-                    error.data.type == 'UnauthorizedError' ||
-                    error.data.code == 'invalid_token'
-                  ) {
-                    console.log('User not authorized:', error.data.message);
-                  }
+                socket.on('authorized', () => {
+                  console.log(
+                    'user authorized. next authorization will be scheduled in 5 secs'
+                  );
                 });
-                console.log(socket);
-              });
+
+                socket.on('unauthorized', () => {
+                  console.log('user not authroized!!!');
+                  socket.emit('disconnect');
+                  socket.off();
+                  window.location.reload();
+                });
+              }
+            });
           }
         }
       },

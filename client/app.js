@@ -20,7 +20,6 @@ let dummySocket = {
 
 const App = () => {
   const [user, setUser] = useState('');
-  const [token, setToken] = useState('');
   const [socket, setSocket] = useState(dummySocket);
 
   const contextValue = useMemo(
@@ -29,10 +28,8 @@ const App = () => {
       setUser,
       socket,
       setSocket,
-      token,
-      setToken,
     }),
-    [user, setUser, socket, setSocket, token, setToken]
+    [user, setUser, socket, setSocket]
   );
 
   return (

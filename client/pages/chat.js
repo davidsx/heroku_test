@@ -11,29 +11,19 @@ import '../styles/chat.scss';
 
 const Chat = () => {
   const [cookies, setCookie, removeCookie] = useCookies(['token']);
-  const {socket, user, token} = useContext(UserContext);
+  const {socket, user} = useContext(UserContext);
   const [userCount, setUserCount] = useState(0);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    console.log('cookies', cookies);
-    console.log('socket:', socket);
     console.log('user:', user);
-    console.log('token:', token);
-    if (token) {
-      axios
-        // .get(`/api/userCount`, {
-        //   headers: {Authorization: `Bearer ${token}`},
-        // })
-        .get(`/api/userCount`, {
-          withCredentials: true,
-        })
-        .then((response) => {
-          if (response.status === 200) {
-            setUserCount(response.data.userCount);
-          }
-        });
+    if (user) {
+      axios.get(`/api/userCount`).then((response) => {
+        if (response.status === 200) {
+          setUserCount(response.data);
+        }
+      });
     }
 
     return () => {
@@ -62,16 +52,13 @@ const Chat = () => {
     if (message) {
       socket.emit(
         'message',
-        {
-          token,
-          message,
-        },
+        message,
         () => setMessage('')
       );
     }
   }
 
-  return !socket || !user || !token ? (
+  return !socket || !user ? (
     <Redirect to="/" />
   ) : (
     <div className="chat">
